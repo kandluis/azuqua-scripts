@@ -1,0 +1,19 @@
+{
+  "name": "crawler",
+  "version": "1.0.0",
+  "description": "Crawl zendesk for partners.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "lol"
+  ],
+  "author": "Eddy & Luis",
+  "license": "ISC",
+  "dependencies": {
+    "htmlparser": "^1.7.7",
+    "lodash": "^4.14.1",
+    "request": "^2.74.0"
+  }
+}
