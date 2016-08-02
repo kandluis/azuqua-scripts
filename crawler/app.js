@@ -2,15 +2,17 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-01 22:55:17
+* @Last Modified time: 2016-08-01 23:31:28
 */
 
 'use strict';
 
 var _ = require("lodash")
+  , debug = require('debug')('scripts:crawler')
+  , fs = require("fs")
+  , htmlparser = require("htmlparser"),
+  , json2csv = require("json2csv")
   , request = require("request")
-  , htmlparser = require("htmlparser")
-  , debug = require('debug')('scripts:crawler');
 
 var CONST = {
   element: "tag",
@@ -18,6 +20,10 @@ var CONST = {
   searchParams: {
     uri: "https://www.google.com/search",
     method: "GET"
+  },
+  latency: {
+    mean: 500,
+    variance: 500
   }
 }
 
@@ -27,6 +33,7 @@ var argv = require('yargs')
   .describe("n", "The number of search results per request. [1,..,100].")
   .describe("m", "The maximum number of requests to make to the Google API. [1..].")
   .describe("d", "The host domain to search for subdomains.")
+  .describe("b", "Flag to specify if randomized interval should be used between requests.")
   .alias("n", "num_results")
   .alias("m", "max_requests")
   .alias("d", "domain")
@@ -36,7 +43,8 @@ var argv = require('yargs')
   .demand(["d"])
   .default({
     n: 10,
-    m: 1
+    m: 1,
+    b: true
   })
   .argv;
 
@@ -112,12 +120,18 @@ var utils = {
       // Assuming cite tag only has one child, which is a text node.
       if (obj && obj.type == CONST.element && obj.name == CONST.type
         && obj.children.length > 0){
-        var company = utils.getCompany(obj.children[0].raw);
+        var url = obj.children[0].raw;
+        var company = utils.getCompany(url);
         if (hashSet[company]){
           hashSet[company].count = hashSet[company].count + 1;
         }
         else {
-          hashSet[company] = { count: 1, ranking: _.size(hashSet) };
+          hashSet[company] = {
+            name: company,
+            url: url,
+            count: 1,
+            ranking: _.size(hashSet)
+          };
         }
       }
 
@@ -145,7 +159,7 @@ var utils = {
         num: argv.n > 0 ? argv.n : 10
       }
     };
-    debug("Preparing to request Google Search...")
+    console.log("Preparing to request Google Search...")
     debug(URI);
 
     request(URI, function(err, res, body){
@@ -170,28 +184,44 @@ var utils = {
 
 /**
  * Recursively and asynchronously sends out Google requests.
- * @param  {int}   start    The search to result to start from.
+ * @param  {int}   req_num     The current request number.
  * @param  {object}   results  The results calculated thusfar.
  * @param  {Function} callback Called with final results.
  * @return {bool}            True on success.
  */
-function recursiveCallback(start, results, callback){
-  debug("Start page: ", start);
+function recursiveCallback(req_num, results, callback){
+  debug("req_num page: ", req_num);
 
-  if(start >= argv.m){
-    debug("Finished...");
-    debug(results);
+  if(req_num >= argv.m){
     callback(results);
     return true;
   }
 
   // Set a random wait time if specified by the user to attempt to bypass Google's
   // bot detection.
-  utils.queryGoogleFromStart(start, _.partial(
-    recursiveCallback, start + 1, _, callback));
+  var rand = (argv.b) ? 0 : Math.round(Math.random() * CONST.latency.variance) + CONST.latency.mean;
+  setTimeout(function(){
+    utils.queryGoogleFromStart(req_num * argv.n, function(res) {
+      recursiveCallback(req_num + 1, _.mergeWith(results, res, function(objVal, srcVal){
+        if (!objVal) return srcVal;
+        if (!srcVal) return objVal;
+        return {
+          count: objVal.count + srcVal.count,
+          ranking: _.min(objVal.ranking, srcVal.ranking)
+        };
+      }), callback);
+    })
+  }, rand);
 }
 
 recursiveCallback(0, {}, function(res){
   // Let's process the final results!
   console.log(JSON.stringify(res, null, 2));
+
+  // Write out as a csv
+  var csv = json2csv({ data: _.values(res) });
+  fs.writeFile('out.csv', csv, function(err) {
+    if (err) throw err;
+    console.log('file saved!');
+  });
 });
