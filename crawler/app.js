@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-02 10:30:44
+* @Last Modified time: 2016-08-02 10:31:11
 */
 
 'use strict';
@@ -173,7 +173,7 @@ var utils = {
         num: argv.n > 0 ? argv.n : 10
       }
     };
-    console.log("Preparing to request Google Search..." start);
+    console.log("Preparing to request Google Search...", start);
     debug(URI);
 
     request(URI, function(err, res, body){
