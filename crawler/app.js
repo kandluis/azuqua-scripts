@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-02 10:31:11
+* @Last Modified time: 2016-08-02 13:59:28
 */
 
 'use strict';
@@ -88,7 +88,7 @@ var utils = {
 
     if (array.length == 3) {
         var someVariable = array[0];
-        if (someVariable.includes("/")){
+        if (someVariable.indexOf("/") > -1){
           var internalArray = someVariable.split("//");
           companyName = internalArray[1];
         }
