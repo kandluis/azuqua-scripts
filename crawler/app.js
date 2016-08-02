@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-01 23:57:12
+* @Last Modified time: 2016-08-02 00:20:33
 */
 
 'use strict';
@@ -17,6 +17,9 @@ var _ = require("lodash")
 var CONST = {
   element: "tag",
   type: "cite",
+  heuristics: {
+    minValidHTMLLength: 5000
+  },
   searchParams: {
     uri: "https://www.google.com/search",
     method: "GET"
@@ -30,10 +33,10 @@ var CONST = {
 var argv = require('yargs')
   .usage("Usage: $0 -d [domain] -n [num] -m [num]")
   .help("h")
-  .describe("n", "The number of search results per request. [1,..,100].")
-  .describe("m", "The maximum number of requests to make to the Google API. [1..].")
+  .describe("n", "The number of search results per request (default 10). [1,..,100].")
+  .describe("m", "The maximum number of requests to make to the Google API. (default 1) [1..].")
   .describe("d", "The host domain to search for subdomains.")
-  .describe("b", "Flag to specify if randomized interval should be used between requests.")
+  .describe("b", "Flag to specify if randomized interval should be used between requests. (default true)")
   .alias("n", "num_results")
   .alias("m", "max_requests")
   .alias("d", "domain")
@@ -143,13 +146,13 @@ var utils = {
   },
 
   /**
-   * Determines in the returned DOM object is a bot test page.
-   * @param  {object}  DOM The page DOM.
-   * @return {string}  The URL for the both page or null if not a bothpage.
+   * Determines in the raw HTML is a bot page. Uses heuristics.
+   * @param  {String}  Raw HTML for the page.
+   * @return {Bool}
    */
-  getBotPageURL: function(DOM){
-    return null;
-  }
+  isBotURL: function(rawHTML){
+    return rawHTML.length < CONST.heuristics.minValidHTMLLength;
+  },
 
   /**
    * Get's Google Search results for *.zendesk subdomain query beginning from
@@ -172,27 +175,27 @@ var utils = {
     debug(URI);
 
     request(URI, function(err, res, body){
-      var res = {};
+      var results = {};
       if (err){
         debug("Error requesting Google results. Error: ", err);
       }
       debug("Returned request ", body);
 
-      var dom = utils.createDOM(body);
-      var botURL = getBotPageURL(dom);
-      if(!botURL){
+      if(!utils.isBotURL(body)){
+        var dom = utils.createDOM(body);
 
         debug("Extracting company names from ", dom);
 
-        var res = utils.extractCompanyNames(dom, {});
+        var results = utils.extractCompanyNames(dom, {});
 
         debug("Finished extraction...");
 
-        next(res);
+        return next(results);
       }
 
-      console.log("Hit a bot test page. Please visit: ", botURL);
-      process.exit(1);
+
+      console.log("Hit a bot test page. Please visit: ", res.request.uri.href);
+      next(results);
     });
   }
 }
@@ -214,9 +217,15 @@ function recursiveCallback(req_num, results, callback){
 
   // Set a random wait time if specified by the user to attempt to bypass Google's
   // bot detection.
-  var rand = (argv.b) ? 0 : Math.round(Math.random() * CONST.latency.variance) + CONST.latency.mean;
+  var rand = (argv.b) ?
+    Math.round(Math.random() * CONST.latency.variance) + CONST.latency.mean : 0;
+  console.log("Setting timeout to ", rand, "ms");
   setTimeout(function(){
     utils.queryGoogleFromStart(req_num * argv.n, function(res) {
+      // Bubble up, error occurred, salvage results!
+      if(!res){
+        return callback(results);
+      }
       // bump ranking of new results by length of old results
       var currRanking = _.size(results);
       var bumpedRes = _.transform(res, function(acc, val, key){
