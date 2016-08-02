@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-01 23:31:28
+* @Last Modified time: 2016-08-01 23:33:54
 */
 
 'use strict';
@@ -10,9 +10,9 @@
 var _ = require("lodash")
   , debug = require('debug')('scripts:crawler')
   , fs = require("fs")
-  , htmlparser = require("htmlparser"),
+  , htmlparser = require("htmlparser")
   , json2csv = require("json2csv")
-  , request = require("request")
+  , request = require("request");
 
 var CONST = {
   element: "tag",
