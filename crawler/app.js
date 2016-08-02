@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-02 09:49:50
+* @Last Modified time: 2016-08-02 09:50:12
 */
 
 'use strict';
@@ -98,7 +98,7 @@ var utils = {
     }
 
     if (companyName == "www" || companyName == undefined){
-        companyName = "zendesk";
+        companyName = url;
     }
 
     debug("Extracted company name: ", companyName);
