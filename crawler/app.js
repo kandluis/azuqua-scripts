@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-01 20:55:35
+* @Last Modified time: 2016-08-01 22:55:17
 */
 
 'use strict';
@@ -22,25 +22,23 @@ var CONST = {
 }
 
 var argv = require('yargs')
-  .usage("Usage: $0 -h zendesk.com -n 10 -m 1")
+  .usage("Usage: $0 -d [domain] -n [num] -m [num]")
   .help("h")
-  .demand(["h"])
-  .describe("n", "The number of search results per request. [1,..,100]")
-  .describe("m", "The maximum number of requests to make to the Google API. [1..]")
-  .describe("h", "The host domain to search for subdomains")
+  .describe("n", "The number of search results per request. [1,..,100].")
+  .describe("m", "The maximum number of requests to make to the Google API. [1..].")
+  .describe("d", "The host domain to search for subdomains.")
   .alias("n", "num_results")
   .alias("m", "max_requests")
-  .alias("h", "host")
+  .alias("d", "domain")
+  .alias("h", "help")
   .number("n")
   .number("m")
+  .demand(["d"])
   .default({
     n: 10,
     m: 1
   })
   .argv;
-
-console.log(argv);
-process.exit();
 
 var utils = {
   /**
@@ -115,7 +113,12 @@ var utils = {
       if (obj && obj.type == CONST.element && obj.name == CONST.type
         && obj.children.length > 0){
         var company = utils.getCompany(obj.children[0].raw);
-        hashSet[company] = (hashSet[company]) ? hashSet[company] + 1: 1;
+        if (hashSet[company]){
+          hashSet[company].count = hashSet[company].count + 1;
+        }
+        else {
+          hashSet[company] = { count: 1, ranking: _.size(hashSet) };
+        }
       }
 
       // recursively call on the children
@@ -133,25 +136,28 @@ var utils = {
    * companies hash.
    */
   queryGoogleFromStart: function(start, next){
-
-    debug("Preparing to request Google Search...");
-
-    request({
+    var URI = {
       uri: CONST.searchParams.uri,
       method: CONST.searchParams.method,
       qs: {
         start: start,
-        q: "site:" + argv.h,
+        q: "site:" + argv.d,
         num: argv.n > 0 ? argv.n : 10
       }
-    }, function(err, res, body){
+    };
+    debug("Preparing to request Google Search...")
+    debug(URI);
+
+    request(URI, function(err, res, body){
       var res = {};
       if (err){
         debug("Error requesting Google results. Error: ", err);
       }
+      debug("Returned request ", body);
+
       var dom = utils.createDOM(body);
 
-      debug("Extracting comapny names from ", dom);
+      debug("Extracting company names from ", dom);
 
       var res = utils.extractCompanyNames(dom, {});
 
@@ -162,14 +168,30 @@ var utils = {
   }
 }
 
-function recursiveCallback(start, results){
+/**
+ * Recursively and asynchronously sends out Google requests.
+ * @param  {int}   start    The search to result to start from.
+ * @param  {object}   results  The results calculated thusfar.
+ * @param  {Function} callback Called with final results.
+ * @return {bool}            True on success.
+ */
+function recursiveCallback(start, results, callback){
   debug("Start page: ", start);
 
-  if(start >= argv.n * argv.m){
-    console.log(results);
+  if(start >= argv.m){
+    debug("Finished...");
+    debug(results);
+    callback(results);
+    return true;
   }
 
-  utils.queryGoogleFromStart(start, _.partial(recursiveCallback, start + argv.n));
+  // Set a random wait time if specified by the user to attempt to bypass Google's
+  // bot detection.
+  utils.queryGoogleFromStart(start, _.partial(
+    recursiveCallback, start + 1, _, callback));
 }
 
-recursiveCallback(0, {});
+recursiveCallback(0, {}, function(res){
+  // Let's process the final results!
+  console.log(JSON.stringify(res, null, 2));
+});
