@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-02 00:20:33
+* @Last Modified time: 2016-08-02 09:49:50
 */
 
 'use strict';
@@ -25,8 +25,8 @@ var CONST = {
     method: "GET"
   },
   latency: {
-    mean: 1500,
-    variance: 1000
+    mean: 700,
+    variance: 500
   }
 }
 
