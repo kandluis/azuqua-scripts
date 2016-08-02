@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-02 10:27:41
+* @Last Modified time: 2016-08-02 10:30:44
 */
 
 'use strict';
@@ -236,7 +236,7 @@ function recursiveCallback(req_num, results, callback){
         if (!srcVal) return objVal;
         return _.extend(objVal, {
           count: objVal.count + srcVal.count,
-          ranking: _.min(objVal.ranking, srcVal.ranking)
+          ranking: _.min([objVal.ranking, srcVal.ranking])
         });
       }), callback);
     })
