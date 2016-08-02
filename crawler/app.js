@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-02 09:50:12
+* @Last Modified time: 2016-08-02 10:26:45
 */
 
 'use strict';
@@ -25,25 +25,27 @@ var CONST = {
     method: "GET"
   },
   latency: {
-    mean: 700,
+    mean: 500,
     variance: 500
   }
 }
 
 var argv = require('yargs')
-  .usage("Usage: $0 -d [domain] -n [num] -m [num]")
+  .usage("Usage: $0 -d [domain] -n [num] -m [num] -o [file]")
   .help("h")
   .describe("n", "The number of search results per request (default 10). [1,..,100].")
   .describe("m", "The maximum number of requests to make to the Google API. (default 1) [1..].")
   .describe("d", "The host domain to search for subdomains.")
   .describe("b", "Flag to specify if randomized interval should be used between requests. (default true)")
+  .describe("o", "The output csv file for writing results.")
   .alias("n", "num_results")
   .alias("m", "max_requests")
   .alias("d", "domain")
+  .alias("o", "output")
   .alias("h", "help")
   .number("n")
   .number("m")
-  .demand(["d"])
+  .demand(["d", "o"])
   .default({
     n: 10,
     m: 1,
@@ -98,7 +100,7 @@ var utils = {
     }
 
     if (companyName == "www" || companyName == undefined){
-        companyName = url;
+        companyName = argv.d;
     }
 
     debug("Extracted company name: ", companyName);
@@ -151,7 +153,7 @@ var utils = {
    * @return {Bool}
    */
   isBotURL: function(rawHTML){
-    return rawHTML.length < CONST.heuristics.minValidHTMLLength;
+    return rawHTML && rawHTML.length < CONST.heuristics.minValidHTMLLength;
   },
 
   /**
@@ -192,10 +194,8 @@ var utils = {
 
         return next(results);
       }
-
-
       console.log("Hit a bot test page. Please visit: ", res.request.uri.href);
-      next(results);
+      next(null);
     });
   }
 }
@@ -242,7 +242,7 @@ function recursiveCallback(req_num, results, callback){
     })
   }, rand);
 }
-
+// Call the main program!
 recursiveCallback(0, {}, function(res){
   // Let's process the final results!
   console.log(JSON.stringify(res, null, 2));
@@ -251,7 +251,7 @@ recursiveCallback(0, {}, function(res){
   var values = _.values(res);
   if (values.length > 0) {
     var csv = json2csv({ data: _.values(res) });
-    fs.writeFile('out.csv', csv, function(err) {
+    fs.writeFile(argv.o, csv, function(err) {
       if (err) {
         console.log("failed to save file ", err);
       }
