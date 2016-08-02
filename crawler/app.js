@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-01 23:50:21
+* @Last Modified time: 2016-08-01 23:57:12
 */
 
 'use strict';
@@ -143,6 +143,15 @@ var utils = {
   },
 
   /**
+   * Determines in the returned DOM object is a bot test page.
+   * @param  {object}  DOM The page DOM.
+   * @return {string}  The URL for the both page or null if not a bothpage.
+   */
+  getBotPageURL: function(DOM){
+    return null;
+  }
+
+  /**
    * Get's Google Search results for *.zendesk subdomain query beginning from
    * start
    * @param  {int}      start     The result number from which to return results
@@ -170,14 +179,20 @@ var utils = {
       debug("Returned request ", body);
 
       var dom = utils.createDOM(body);
+      var botURL = getBotPageURL(dom);
+      if(!botURL){
 
-      debug("Extracting company names from ", dom);
+        debug("Extracting company names from ", dom);
 
-      var res = utils.extractCompanyNames(dom, {});
+        var res = utils.extractCompanyNames(dom, {});
 
-      debug("Finished extraction...");
+        debug("Finished extraction...");
 
-      next(res);
+        next(res);
+      }
+
+      console.log("Hit a bot test page. Please visit: ", botURL);
+      process.exit(1);
     });
   }
 }
