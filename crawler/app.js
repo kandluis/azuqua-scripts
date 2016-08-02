@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-02 10:26:45
+* @Last Modified time: 2016-08-02 10:27:41
 */
 
 'use strict';
@@ -173,7 +173,7 @@ var utils = {
         num: argv.n > 0 ? argv.n : 10
       }
     };
-    console.log("Preparing to request Google Search...")
+    console.log("Preparing to request Google Search..." start);
     debug(URI);
 
     request(URI, function(err, res, body){
@@ -242,11 +242,9 @@ function recursiveCallback(req_num, results, callback){
     })
   }, rand);
 }
+
 // Call the main program!
 recursiveCallback(0, {}, function(res){
-  // Let's process the final results!
-  console.log(JSON.stringify(res, null, 2));
-
   // Write out as a csv if data
   var values = _.values(res);
   if (values.length > 0) {
