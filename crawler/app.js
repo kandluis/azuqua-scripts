@@ -2,7 +2,7 @@
 * @Author: Edward & Luis
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-01 23:33:54
+* @Last Modified time: 2016-08-01 23:50:21
 */
 
 'use strict';
@@ -22,8 +22,8 @@ var CONST = {
     method: "GET"
   },
   latency: {
-    mean: 500,
-    variance: 500
+    mean: 1500,
+    variance: 1000
   }
 }
 
@@ -202,13 +202,18 @@ function recursiveCallback(req_num, results, callback){
   var rand = (argv.b) ? 0 : Math.round(Math.random() * CONST.latency.variance) + CONST.latency.mean;
   setTimeout(function(){
     utils.queryGoogleFromStart(req_num * argv.n, function(res) {
-      recursiveCallback(req_num + 1, _.mergeWith(results, res, function(objVal, srcVal){
+      // bump ranking of new results by length of old results
+      var currRanking = _.size(results);
+      var bumpedRes = _.transform(res, function(acc, val, key){
+        acc[key] = _.extend(val, { ranking: val.ranking + currRanking });
+      }, {});
+      recursiveCallback(req_num + 1, _.mergeWith(results, bumpedRes, function(objVal, srcVal){
         if (!objVal) return srcVal;
         if (!srcVal) return objVal;
-        return {
+        return _.extend(objVal, {
           count: objVal.count + srcVal.count,
           ranking: _.min(objVal.ranking, srcVal.ranking)
-        };
+        });
       }), callback);
     })
   }, rand);
@@ -218,10 +223,14 @@ recursiveCallback(0, {}, function(res){
   // Let's process the final results!
   console.log(JSON.stringify(res, null, 2));
 
-  // Write out as a csv
-  var csv = json2csv({ data: _.values(res) });
-  fs.writeFile('out.csv', csv, function(err) {
-    if (err) throw err;
-    console.log('file saved!');
-  });
+  // Write out as a csv if data
+  var values = _.values(res);
+  if (values.length > 0) {
+    var csv = json2csv({ data: _.values(res) });
+    fs.writeFile('out.csv', csv, function(err) {
+      if (err) {
+        console.log("failed to save file ", err);
+      }
+    });
+  }
 });
