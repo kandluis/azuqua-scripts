@@ -1,0 +1,14 @@
+{
+  "name": "subdomain-validator",
+  "version": "1.0.0",
+  "description": "Checks Zendesks for possible sales leads",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Edward Szczepanski",
+  "license": "ISC",
+  "dependencies": {
+    "yargs": "^4.8.1"
+  }
+}
