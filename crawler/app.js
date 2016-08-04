@@ -1,8 +1,8 @@
 /*
-* @Author: Edward & Luis
+* @Author: Luis Perez
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-02 13:59:28
+* @Last Modified time: 2016-08-03 19:14:22
 */
 
 'use strict';
@@ -12,7 +12,9 @@ var _ = require("lodash")
   , fs = require("fs")
   , htmlparser = require("htmlparser")
   , json2csv = require("json2csv")
-  , request = require("request");
+  , request = require("request")
+  , table = require("text-table")
+  , url = require("url");
 
 var CONST = {
   element: "tag",
@@ -27,6 +29,9 @@ var CONST = {
   latency: {
     mean: 500,
     variance: 500
+  },
+  outOptions: {
+    urlLength: 30
   }
 }
 
@@ -37,7 +42,7 @@ var argv = require('yargs')
   .describe("m", "The maximum number of requests to make to the Google API. (default 1) [1..].")
   .describe("d", "The host domain to search for subdomains.")
   .describe("b", "Flag to specify if randomized interval should be used between requests. (default true)")
-  .describe("o", "The output csv file for writing results.")
+  .describe("o", "The output csv file for writing results. If not specified, outputs are written to stdout.")
   .alias("n", "num_results")
   .alias("m", "max_requests")
   .alias("d", "domain")
@@ -45,7 +50,7 @@ var argv = require('yargs')
   .alias("h", "help")
   .number("n")
   .number("m")
-  .demand(["d", "o"])
+  .demand(["d"])
   .default({
     n: 10,
     m: 1,
@@ -79,33 +84,24 @@ var utils = {
    * @param  {string} url Input site URL.
    * @return {string}     Subdomain from website.
    */
-  getCompany: function(url) {
+  getCompany: function(urlString) {
 
-    debug("Extracting company from...", url);
+    debug("Extracting company from...", urlString);
+    var host = url.parse(urlString).host;
 
-    var array = url.split(".");
-    var companyName;
+    // successful parsing
+    if(host) {
+      var domains = host.split(".");
 
-    if (array.length == 3) {
-        var someVariable = array[0];
-        if (someVariable.indexOf("/") > -1){
-          var internalArray = someVariable.split("//");
-          companyName = internalArray[1];
-        }
-        else {
-          companyName = someVariable;
-        }
-    } else if (array.length == 4) {
-        companyName = array[1];
+      // drop the top level domain and suffix
+      var companyName = _.slice(domains, 0, domains.length - 2).join(".");
+      debug("Extracted company name: ", companyName);
+
+      return companyName;
     }
 
-    if (companyName == "www" || companyName == undefined){
-        companyName = argv.d;
-    }
-
-    debug("Extracted company name: ", companyName);
-
-    return companyName;
+    // URL does not begin with https//, so we take subdomain
+    return urlString.split(".")[0];
   },
 
   /**
@@ -246,13 +242,31 @@ function recursiveCallback(req_num, results, callback){
 // Call the main program!
 recursiveCallback(0, {}, function(res){
   // Write out as a csv if data
-  var values = _.values(res);
+  var values = _.sortBy(_.values(res), function(el){
+    return -1 * el.ranking;
+  });
+
   if (values.length > 0) {
-    var csv = json2csv({ data: _.values(res) });
-    fs.writeFile(argv.o, csv, function(err) {
-      if (err) {
-        console.log("failed to save file ", err);
-      }
-    });
+    if (!argv.o){
+      // truncate values so we can pretty print a little better
+      var prettyOut = _.map(values, function(val){
+        var name = val.name
+          , url = val.url.substring(0, CONST.outOptions.urlLength)
+          , ranking = val.ranking
+          , count = val.count;
+        return [ranking, name, count, url];
+      });
+      console.log(table(_.concat(
+        [["Ranking", "Company", "Times Encountered", "URL"]],
+        prettyOut)));
+    }
+    else{
+      var csv = json2csv({ data: _.values(res) });
+      fs.writeFile(argv.o, csv, function(err) {
+        if (err) {
+          console.log("failed to save file ", err);
+        }
+      });
+    }
   }
 });
