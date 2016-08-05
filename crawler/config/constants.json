@@ -1,0 +1,18 @@
+{
+  "element": "tag",
+  "type": "cite",
+  "heuristics": {
+    "minValidHTMLLength": 5000
+  },
+  "searchParams": {
+    "uri": "https://www.google.com/search",
+         "method": "GET"
+  },
+  "latency": {
+    "mean": 500,
+    "variance": 500
+  },
+  "outOptions": {
+    "urlLength": 30
+  }
+}
