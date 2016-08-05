@@ -2,7 +2,7 @@
 * @Author: Luis Perez
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-05 15:14:05
+* @Last Modified time: 2016-08-05 15:19:34
 */
 
 'use strict';
@@ -48,6 +48,8 @@ var dependencies = {
 }
 
 // Determine which crawler method we've decided to use.
+// TODO(nautilik): Need to make sure this function is generic.
+// It needs to work with self-describing hashset.
 var helpers = {
   prettyPrintResults: function(res){
     // Write out as a csv if data

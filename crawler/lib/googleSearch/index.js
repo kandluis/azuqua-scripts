@@ -2,7 +2,7 @@
 * @Author: Luis Perez
 * @Date:   2016-08-05 12:22:56
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-05 15:15:02
+* @Last Modified time: 2016-08-05 15:23:31
 */
 
 'use strict';
@@ -57,10 +57,23 @@ module.exports = function(dependencies){
     }, rand);
   }
 
-  // Call the main program!
+  // See README.md for details on the purpose of these functions.
   return {
     run: function(callback) {
       recursiveCallback(argv.s, {}, callback);
+    },
+
+    keysToColumnMapping: function(){
+      return {
+        name: "Company",
+        count: "Times Encountered",
+        ranking: "Ranking",
+        url: "URL"
+      }
+    },
+
+    prefix: function(){
+      return "gs";
     }
   };
 }

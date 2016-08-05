@@ -8,6 +8,11 @@ Crawler searches the depths of the web for information on our competitors. Run t
 To begin development, no further steps are necessary. Modify the source code and execute `node app.js [COMMANDS]` where `[COMANDS]` is as described by the output of the `--help` flag.
 
 ## Directory Structure
+---
+The `config` subdirectory contains the constants used by the application.
+
+---
+The `lib` subdirectory.
 
 Crawler has the ability to use different `methods` for Crawling the web. The code for each method is contained within the `lib\[METHOD]\` subdirectory. The main app takes as input multiple arguments -- however, the method to be used is specified by the `--method` flag, which consists of a comma separated list of methods.
 
@@ -72,10 +77,16 @@ module.exports = function(dependencies){
 
 
 *Note*: not all command-line parameters are applicable to each method. If the parameters are not applicable, then any inputs are simply ignored.
+---
+The `test` subdirectory.
+
+This directory currently contains unit tests. It has not yet been implemented.
+
 
 ## Development Goals and TODOs:
 
 We now some future development goals for this library.
 
+  - Add more unit tests to guarantee some good test coverage.
   - Add `bingSearch` and `bingAPI` search methods.
   - Add verification on the parameters; if a parameter is passed in that is not required by a method, then warn the user. If a required parameter for a method is missing, then fail early and provide a detailed error to the user.
