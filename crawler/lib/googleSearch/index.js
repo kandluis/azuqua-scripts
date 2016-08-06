@@ -2,7 +2,7 @@
 * @Author: Luis Perez
 * @Date:   2016-08-05 12:22:56
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-05 15:23:31
+* @Last Modified time: 2016-08-05 16:28:46
 */
 
 'use strict';
@@ -25,7 +25,7 @@ module.exports = function(dependencies){
     debug("req_num page: ", req_num);
 
     if(req_num >= argv.m){
-      callback(results);
+      callback(null, results);
       return true;
     }
 
@@ -38,7 +38,7 @@ module.exports = function(dependencies){
       utils.queryGoogleFromStart(req_num * argv.n, function(res) {
         // Bubble up, error occurred, salvage results!
         if(!res){
-          return callback(results);
+          return callback(null, results);
         }
         // bump ranking of new results by length of old results
         var currRanking = _.size(results);

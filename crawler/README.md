@@ -37,12 +37,16 @@ module.exports = function(dependencies){
   // multiple methods are used, the hashSets are merged. Any
   // other keys are pre-pended with the results the function
   // under `prefix'.
+  //
+  // The callback will be invoked by async.parallel, so it
+  // must follow node.js convention.
   return {
     run: function(callback) {
       // DO SOME WORK
       callback({
         site1: {
           name: site1,
+          ranking: [RANK VALUE]
           ...
           },
         site2: {
