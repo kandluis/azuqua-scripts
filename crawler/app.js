@@ -2,7 +2,7 @@
 * @Author: Luis Perez
 * @Date:   2016-08-01 15:39:03
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-05 17:57:55
+* @Last Modified time: 2016-08-07 10:28:16
 */
 
 'use strict';
@@ -62,11 +62,12 @@ var helpers = {
    */
   loadMethods: function(methodsString){
     var methods = methodsString.split(",");
-    var modules = _filter(_.map(methods, function(method){
+    var modules = _.filter(_.map(methods, function(method){
       try {
-        return require(path.join(dependencies.base, method))(dependencies);
+        return require(path.join(dependencies.base, "lib", method))(dependencies);
       } catch(err){
-        console.log("Error: Method ", method, "does not exists.");
+        console.log("Error: Method", method, "does not exists.");
+        debug(err);
         return null;
       }
     }), function(module){
@@ -84,24 +85,31 @@ var helpers = {
    */
   mergeResults: function(results){
     // the results object is more interesting
+
+    debug("Merging result sets!", results);
+    var fn = _.partial(_.extendWith, {}, _, function(objVal, srcVal, key){
+      // Create the merged key->column name maps
+      if (key == "__method"){
+        return null;
+      }
+
+      if (!objVal) return srcVal;
+      if (!srcVal) return objVal;
+      return _.extend({}, [objVal, srcVal]);
+    });
+
+    var newHashSet = fn.apply(fn, results);
+    delete(newHashSet["__method"]);
+
     return {
-      __columnMap: _.map(results, function(set){
+      __columnMap: _.reduce(results, function(cum, set){
         var prefix = (results.length > 1) ? set.__method.prefix() : "";
 
-        return _.transform(set.__method.keysToColumnMapping(), function(acc, val, key){
+        return _.extend(cum, _.transform(set.__method.keysToColumnMapping(), function(acc, val, key){
           return acc[key] = prefix + val;
-        });
-      });
-      hashSet: _.extendWith({}, results, function(objVal, srcVal, key){
-        // Create the merged key->column name maps
-        if (key == "__method"){
-          return null;
-        }
-
-        if (!objVal) return srcVal;
-        if (!srcVal) return objVal;
-        return _.extend({}, [objVal, srcVal]);
-      });
+        }));
+      }, {}),
+      hashSet: newHashSet
     };
   },
 
@@ -112,18 +120,22 @@ var helpers = {
    */
   prettyPrintResults: function(result){
     // Write out as a csv if data
-    var res = res.hashSet;
+    var res = result.hashSet;
     var values = _.sortBy(_.values(res), function(el){
-      return -1 * el.ranking;
+      return 1 * el.ranking;
     });
+
+    debug("Sorted results", values);
 
     if (values.length > 0) {
       var t = new Table;
 
       _.forEach(values, function(row){
         _.forEach(row, function(val, key){
-          t.cell(res.__columnMap[key], val);
+          debug("Cell", val, result.__columnMap[key]);
+          t.cell(result.__columnMap[key], val);
         });
+        t.newRow();
       });
 
       // Let's set the results!
@@ -159,10 +171,13 @@ var methods = _.map(helpers.loadMethods(argv.c), function(method){
 });
 
 async.parallel(methods, function(err, results){
-  if (!err){
-    var finalOutput = helpers.mergeResults(results);
-    helpers.prettyPrintResults(finalOutput);
+  if (err){
+    return console.log("Failed.", err);
   }
 
-  console.log("Failed. ", err);
+  var finalOutput = helpers.mergeResults(results);
+
+  debug("Merged set", finalOutput);
+
+  helpers.prettyPrintResults(finalOutput);
 });

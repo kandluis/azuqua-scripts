@@ -14,5 +14,8 @@
   },
   "outOptions": {
     "urlLength": 30
+  },
+  "debugOptions": {
+    "maxOutLength": 30
   }
 }

@@ -2,12 +2,14 @@
 * @Author: Luis Perez
 * @Date:   2016-08-05 12:14:51
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-05 15:15:24
+* @Last Modified time: 2016-08-05 20:13:11
 */
 
 'use strict';
 
-var debug = require('debug')('scripts:crawler:googleSearch:utils')
+var _ = require("lodash")
+  ,debug = require('debug')('scripts:crawler:googleSearch:utils')
+  , htmlparser = require("htmlparser")
   , request = require("request")
   , url = require("url");
 
@@ -16,7 +18,7 @@ module.exports = function(dependencies){
   var CONST = dependencies.constants
     , argv = dependencies.argv;
 
-  return {
+  var utils = {
     /**
      * Given rawHTML, creates a manageable DOM object using htmlparser library.
      * @param  {string} rawHTML The input raw HTML.
@@ -80,7 +82,7 @@ module.exports = function(dependencies){
         if (obj && obj.type == CONST.element && obj.name == CONST.type
           && obj.children.length > 0){
           var url = obj.children[0].raw;
-          var company = getCompany(url);
+          var company = utils.getCompany(url);
           if (hashSet[company]){
             hashSet[company].count = hashSet[company].count + 1;
           }
@@ -95,7 +97,7 @@ module.exports = function(dependencies){
         }
 
         // recursively call on the children
-        hashSet = extractCompanyNames(obj.children, hashSet);
+        hashSet = utils.extractCompanyNames(obj.children, hashSet);
       });
 
       return hashSet;
@@ -140,14 +142,14 @@ module.exports = function(dependencies){
       if (err){
         debug("Error requesting Google results. Error: ", err);
       }
-      debug("Returned request ", body);
+      debug("Initial returned request ", body.substring(0, dependencies.constants.debugOptions.maxOutLength));
 
-      if(!isBotURL(body)){
-        var dom = createDOM(body);
+      if(!utils.isBotURL(body)){
+        var dom = utils.createDOM(body);
 
         debug("Extracting company names from ", dom);
 
-        var results = extractCompanyNames(dom, {});
+        var results = utils.extractCompanyNames(dom, {});
 
         debug("Finished extraction...");
 
@@ -167,15 +169,17 @@ module.exports = function(dependencies){
      * companies hash.
      */
     queryGoogleFromStart: function(start, next){
-      var URI = constructURICall(start);
+      var URI = utils.constructURICall(start);
 
       console.log("Preparing to request Google Search...", start);
       debug(URI);
 
       request(URI, function(err, res, body){
-        var results = processResponse(err, res, body);
+        var results = utils.processResponse(err, res, body);
         return next(results);
       });
     }
   };
+
+  return utils;
 }

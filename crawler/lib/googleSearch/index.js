@@ -2,12 +2,13 @@
 * @Author: Luis Perez
 * @Date:   2016-08-05 12:22:56
 * @Last Modified by:   Luis Perez
-* @Last Modified time: 2016-08-05 16:28:46
+* @Last Modified time: 2016-08-05 18:08:46
 */
 
 'use strict';
 
-var debug = require('debug')('scripts:crawler:googleSearch');
+var _ = require("lodash")
+  , debug = require('debug')('scripts:crawler:googleSearch');
 
 module.exports = function(dependencies){
   var argv = dependencies.argv
